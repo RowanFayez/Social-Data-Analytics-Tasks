@@ -1,0 +1,7 @@
+praw
+pytrends
+requests
+newsapi-python
+vaderSentiment
+pandas
+python-dotenv

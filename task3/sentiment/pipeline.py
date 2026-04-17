@@ -57,8 +57,12 @@ def run_task3(
     negative_words_path: str,
     sample_size: int = 200,
     random_seed: int = 42,
+    llm_provider: str = "gemini",
     gemini_api_key: str = "",
-    gemini_model: str = "gemini-1.5-flash",
+    gemini_model: str = "gemini-2.5-flash",
+    groq_api_key: str = "",
+    groq_model: str = "llama-3.1-8b-instant",
+    strict_llm: bool = False,
     glove_path: str = "",
     neutral_margin: float = 0.05,
     bow_max_features: int = 1200,
@@ -96,12 +100,28 @@ def run_task3(
 
     # labeling (3 prompts)
     fallback = df["sentiment_label"].map(normalize_label).tolist() if "sentiment_label" in df.columns else None
+
+    provider = (llm_provider or "gemini").strip().lower()
+    if provider in {"none", "off", "disabled", "no"}:
+        provider = "gemini"
+        api_key = ""
+        model_name = gemini_model
+    elif provider == "groq":
+        api_key = groq_api_key
+        model_name = groq_model
+    else:
+        provider = "gemini"
+        api_key = gemini_api_key
+        model_name = gemini_model
+
     label_tuples = build_labels(
+        provider=provider,
         texts=df["task3_text"].tolist(),
-        api_key=gemini_api_key,
-        model_name=gemini_model,
-        cache_path=os.path.join(cache_dir, "gemini_label_cache.json"),
+        api_key=api_key,
+        model_name=model_name,
+        cache_path=os.path.join(cache_dir, f"{provider}_label_cache.json"),
         fallback_labels=fallback,
+        strict_api=strict_llm,
     )
     df["label_prompt_1"] = [x[0] for x in label_tuples]
     df["label_prompt_2"] = [x[1] for x in label_tuples]
@@ -292,8 +312,9 @@ def run_task3(
     summary = {
         "rows_input_sampled": int(len(df)),
         "sample_size_requested": int(sample_size),
-        "gemini_model": gemini_model,
-        "used_api_labeling": bool(gemini_api_key),
+        "llm_provider": provider,
+        "llm_model": model_name,
+        "used_api_labeling": bool(api_key),
         "fleiss_kappa": float(kappa),
         "preprocessing_variants": PREP_VARIANTS,
         "representations": ["bow", "glove"],
@@ -315,7 +336,8 @@ def run_task3(
     try:
         print("\n=== Task 3 - Terminal Summary ===", flush=True)
         print(f"Input sampled rows: {len(df)} (requested: {sample_size})", flush=True)
-        print(f"Used API labeling: {bool(gemini_api_key)}", flush=True)
+        print(f"LLM provider: {provider}", flush=True)
+        print(f"Used API labeling: {bool(api_key)}", flush=True)
         print(f"Fleiss Kappa: {kappa:.4f}", flush=True)
         print(f"Labeled dataset: {labeled_path}", flush=True)
         print(f"Fleiss kappa file: {os.path.join(labels_dir, 'fleiss_kappa.json')}", flush=True)

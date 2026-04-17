@@ -1,6 +1,11 @@
 from pytrends.request import TrendReq
 from newsapi import NewsApiClient
+import os
 from utils.config import NEWS_API_KEY
+
+
+def _strict_news_api() -> bool:
+    return os.getenv("STRICT_NEWS_API", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def get_top_trends(limit=10, geo='GLOBAL'):
@@ -43,7 +48,15 @@ def get_top_trends(limit=10, geo='GLOBAL'):
         except Exception as e:
             print('NewsAPI fallback error:', e)
 
+            if _strict_news_api():
+                raise RuntimeError(f"NewsAPI fallback error: {e}") from e
+
     # Final fallback: sensible defaults
+    if _strict_news_api():
+        raise RuntimeError(
+            "Could not fetch trends via pytrends, and NewsAPI fallback did not return results. "
+            "STRICT_NEWS_API is enabled, so no hardcoded default trends will be used."
+        )
     defaults = [
         'election',
         'economy',

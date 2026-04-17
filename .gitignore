@@ -1,0 +1,21 @@
+# Secrets / env files
+.env
+**/.env
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Data outputs
+*.csv
+*.json
+
+
+# Virtual envs (if created inside the repo)
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

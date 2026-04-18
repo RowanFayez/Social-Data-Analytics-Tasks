@@ -1,6 +1,6 @@
 # دليل تشغيل المشروع
 
-هذا المستودع يحتوي ثلاث مهام رئيسية مرتبة في المجلدات `task1`, `task2`, `task3`.
+هذا المستودع يحتوي أربع مهام رئيسية مرتبة في المجلدات `task1`, `task2`, `task3`, `task4`.
 الملفات الناتجة تُخزن محليًا داخل `data/` و `final_data/` كما هو موضح في README لكل مهمة داخل كل مجلد.
 
 **ملاحظة مهمة:** هذا الملف في جذر المشروع (خارج أي مجلد فرعي)، ويحتوي على جميع خطوات الإعداد والتشغيل المطلوبة.
@@ -19,6 +19,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r task1/requirements.txt -r task2/requirements.txt -r task3/requirements.txt
+pip install -r task4/requirements.txt
 ```
 
 Linux / macOS (bash):
@@ -36,6 +37,7 @@ pip install -r task1/requirements.txt -r task2/requirements.txt -r task3/require
 pip install -r task1/requirements.txt
 pip install -r task2/requirements.txt
 pip install -r task3/requirements.txt
+pip install -r task4/requirements.txt
 ```
 
 ## متغيرات البيئة المطلوبة (Environment Variables)
@@ -109,6 +111,19 @@ python task3/main.py --sample_size 200 --gemini_api_key YOUR_KEY
 
 بدلاً من تمرير المفتاح في السطر، يمكنك تعيين `GEMINI_API_KEY` في البيئة قبل التشغيل.
 المخرجات تُخزن تحت `task3/final_data/` (labels, models, reports، الخ).
+
+- Task 4 — تقييم وتحسين النماذج + Error Analysis + نشر API:
+
+```bash
+python task4/main.py
+```
+
+لتشغيل API بعد التدريب:
+
+```bash
+cd task4
+uvicorn api:app --reload --port 8000
+```
 
 ## نقاط تحرّي الخلل السريعة
 - إذا ظهر `NEWS_API_KEY not set` أو `Reddit credentials missing.`: تأكد من أن `.env` موجود أو أنك ضبطت المتغيرات في الشل.

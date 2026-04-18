@@ -9,6 +9,8 @@ __pycache__/
 # Data outputs
 *.csv
 *.json
+*.txt
+
 
 
 # Virtual envs (if created inside the repo)

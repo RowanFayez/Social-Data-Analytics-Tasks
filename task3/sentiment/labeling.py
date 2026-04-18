@@ -140,7 +140,12 @@ def _label_with_prompt(
             return label
         except Exception as e:
             last_error = e
-            time.sleep(0.7)
+            # Be nicer to the provider on rate-limit errors.
+            msg = str(e).lower()
+            if "status=429" in msg or "rate limit" in msg:
+                time.sleep(5.0)
+            else:
+                time.sleep(0.7)
 
     if strict_api:
         raise RuntimeError(
@@ -177,6 +182,12 @@ def build_labels(
     cache_data = _read_cache(cache_path)
     out = []
 
+    total = len(texts)
+    try:
+        print(f"Labeling {total} texts via {provider} ({model_name})...", flush=True)
+    except Exception:
+        pass
+
     if strict_api and not api_key:
         raise ValueError(f"strict_api=True but API key is empty for provider '{provider}'.")
 
@@ -196,6 +207,21 @@ def build_labels(
                 fb = normalize_label(fallback_labels[i])
             labels = (fb, fb, fb)
         out.append(labels)
+
+        # Progress indicator for long-running labeling jobs.
+        if total:
+            done = i + 1
+            if done == total or done % 20 == 0:
+                try:
+                    print(f"Labeled {done}/{total}", flush=True)
+                except Exception:
+                    pass
+
+                # Flush cache periodically so partial progress isn't lost.
+                try:
+                    _write_cache(cache_path, cache_data)
+                except Exception:
+                    pass
 
     _write_cache(cache_path, cache_data)
     return out

@@ -116,16 +116,19 @@ def _predict(model: Any, text: str) -> Dict[str, Any]:
     if not cleaned:
         raise ValueError("Empty text after cleaning.")
 
-    pred = model.predict([cleaned])[0]
-    pred = str(pred)
+    pred = str(model.predict([cleaned])[0])
 
-    confidence = None
+    confidence: Optional[float] = None
+    proba_map: Optional[Dict[str, float]] = None
+
     if hasattr(model, "predict_proba"):
-        proba = model.predict_proba([cleaned])
-        confidence = float(np.max(proba))
+        proba = model.predict_proba([cleaned])[0]
+        classes = getattr(model, "classes_", None)
+        if classes is not None:
+            proba_map = {str(c): float(p) for c, p in zip(classes, proba)}
+            confidence = float(np.max(proba))
     elif hasattr(model, "decision_function"):
-        scores = model.decision_function([cleaned])
-        scores = np.array(scores)
+        scores = np.array(model.decision_function([cleaned]))
         if scores.ndim == 1:
             p = 1 / (1 + np.exp(-scores))
             confidence = float(max(p[0], 1 - p[0]))
@@ -134,7 +137,12 @@ def _predict(model: Any, text: str) -> Dict[str, Any]:
             p = exp / exp.sum(axis=1, keepdims=True)
             confidence = float(np.max(p[0]))
 
-    return {"sentiment": pred, "confidence": confidence}
+    return {
+        "sentiment": pred,
+        "confidence": confidence,
+        "clean_text": cleaned,
+        "proba": proba_map,
+    }
 
 
 def _format_confidence(confidence: Optional[float]) -> str:
@@ -149,6 +157,8 @@ def _format_confidence(confidence: Optional[float]) -> str:
 def _render_result(result: Dict[str, Any]) -> None:
     sentiment = str(result.get("sentiment", "")).strip().lower()
     confidence = result.get("confidence")
+    proba = result.get("proba")
+    clean_text = result.get("clean_text")
 
     col1, col2 = st.columns([2, 1])
     with col1:
@@ -162,6 +172,23 @@ def _render_result(result: Dict[str, Any]) -> None:
         st.error("Overall sentiment looks negative.")
     else:
         st.info("Overall sentiment looks neutral.")
+
+    # If the model is unsure, make that explicit.
+    if isinstance(confidence, (int, float)) and confidence == confidence and confidence < 0.45:
+        st.warning(
+            "Low confidence: the model is unsure and the top classes may be close. "
+            "Treat this prediction as uncertain."
+        )
+
+    if isinstance(proba, dict) and proba:
+        st.subheader("Class probabilities")
+        probs_df = pd.DataFrame([{"label": k, "probability": float(v)} for k, v in proba.items()])
+        probs_df = probs_df.sort_values(by="probability", ascending=False)
+        st.dataframe(probs_df, width="stretch")
+
+    if isinstance(clean_text, str) and clean_text:
+        with st.expander("Cleaned text used by the model"):
+            st.code(clean_text)
 
     with st.expander("Raw JSON response"):
         st.code(json.dumps({"sentiment": sentiment, "confidence": confidence}, indent=2), language="json")

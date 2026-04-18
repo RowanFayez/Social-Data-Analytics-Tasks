@@ -45,3 +45,18 @@ curl -X POST http://127.0.0.1:8000/predict -H "Content-Type: application/json" -
 
 If you want to force a specific model artifact, set:
 - `TASK4_MODEL_PATH=task4/final_data/run_<run_id>/optimization/best_model.joblib`
+
+### 3) Streamlit UI (single text input)
+Runs a simple UI that loads the latest `best_model.joblib` and predicts sentiment + confidence.
+
+```bash
+cd task4
+python -m streamlit run streamlit_app.py --server.address 127.0.0.1 --server.port 8501
+```
+
+### 4) Export per-row predictions (for manual error analysis)
+Writes a CSV containing the best-model prediction for every row in the labeled dataset (and a separate CSV of only the misclassified rows).
+
+```bash
+python task4/export_predictions_csv.py --task4_run_dir task4/final_data/run_<run_id>
+```
